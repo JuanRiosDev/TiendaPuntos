@@ -1,8 +1,6 @@
--- Sesión 1: Script SQL para Tienda de Puntos
--- MySQL 8.0+
--- Crea la base de datos, tablas, triggers de sincronización y datos de prueba
 
-CREATE DATABASE IF NOT EXISTS tienda_puntos CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE DATABASE IF NOT EXISTS tienda_puntos;
 USE tienda_puntos;
 
 -- -----------------------------------------------------
@@ -160,7 +158,7 @@ INSERT INTO sqlGRADO (nombre, nivel) VALUES
 ('Segundo', 2);
 
 -- Responsable admin (contrasena_hash generada de ejemplo: 'adminpass' hashed)
--- En producción, generar hash fuerte; aquí usamos texto de ejemplo para pruebas.
+
 INSERT INTO RESPONSABLE (nombre, apellido, usuario, contrasena_hash, rol, activo)
 VALUES ('Admin', 'Principal', 'admin', '$2b$10$EXAMPLEHASHADMINPASSWORD', 'admin', TRUE);
 

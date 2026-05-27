@@ -11,8 +11,8 @@ router.get('/', async (req, res, next) => {
     if (activo !== undefined) where.activo = activo === 'true';
     if (search) {
       where.OR = [
-        { nombre: { contains: search, mode: 'insensitive' } },
-        { apellido: { contains: search, mode: 'insensitive' } },
+        { nombre: { contains: search } },
+        { apellido: { contains: search } },
         { documento: { contains: search } }
       ];
     }

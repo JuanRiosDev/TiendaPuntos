@@ -37,7 +37,7 @@ router.post('/', async (req, res, next) => {
 
       for (const it of items) {
         const art = artMap[it.id_articulo];
-        await tx.detalleCanje.create({ data: { id_canje: canje.id_canje, id_articulo: it.id_articulo, cantidad: parseInt(it.cantidad), puntos_unitarios: art.precio_puntos } });
+        await tx.detalleCanje.create({ data: { id_canje: canje.id_canje, id_articulo: it.id_articulo, cantidad: parseInt(it.cantidad), puntos_unitarios: art.precio_puntos, puntos_total: art.precio_puntos * parseInt(it.cantidad) } });
       }
 
       return { transaccionId: trans.id_transaccion, canjeId: canje.id_canje };
