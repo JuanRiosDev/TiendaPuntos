@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Grado {
+  id_grado Int @id @default(autoincrement())
+  nombre   String
+  nivel    Int
+
+  estudiantes Estudiante[]
+  @@map("sqlGRADO")
+}
+
+model Responsable {
+  id_responsable Int @id @default(autoincrement())
+  nombre         String
+  apellido       String
+  usuario        String @unique
+  contrasena_hash String
+  rol            String
+  activo         Boolean
+
+  transacciones Transaccion[]
+  bitacoras BitacoraPuntos[]
+  @@map("RESPONSABLE")
+}
+
+model Estudiante {
+  id_estudiante    Int @id @default(autoincrement())
+  id_grado         Int
+  nombre           String
+  apellido         String
+  documento        String @unique
+  puntos_disponibles Int
+  puntos_acumulados Int
+  fecha_registro   DateTime @default(now())
+  activo           Boolean
+
+  grado Grado @relation(fields: [id_grado], references: [id_grado])
+  transacciones Transaccion[]
+  bitacoras BitacoraPuntos[]
+  @@map("ESTUDIANTE")
+}
+
+model Articulo {
+  id_articulo     Int @id @default(autoincrement())
+  nombre          String
+  descripcion     String?
+  precio_puntos   Int
+  stock_total     Int
+  stock_disponible Int
+  activo          Boolean
+
+  detalles DetalleCanje[]
+  @@map("ARTICULO")
+}
+
+model Transaccion {
+  id_transaccion Int @id @default(autoincrement())
+  id_estudiante  Int
+  id_responsable Int
+  tipo           String
+  puntos         Int
+  descripcion    String?
+  fecha          DateTime @default(now())
+
+  estudiante Estudiante @relation(fields: [id_estudiante], references: [id_estudiante])
+  responsable Responsable @relation(fields: [id_responsable], references: [id_responsable])
+  canje Canje?
+  @@map("TRANSACCION")
+}
+
+model Canje {
+  id_canje     Int @id @default(autoincrement())
+  id_transaccion Int @unique
+  fecha_canje  DateTime @default(now())
+  estado       String
+
+  transaccion Transaccion @relation(fields: [id_transaccion], references: [id_transaccion])
+  detalles DetalleCanje[]
+  @@map("CANJE")
+}
+
+model DetalleCanje {
+  id_detalle     Int @id @default(autoincrement())
+  id_canje       Int
+  id_articulo    Int
+  cantidad       Int
+  puntos_unitarios Int
+  puntos_total   Int
+
+  canje Canje @relation(fields: [id_canje], references: [id_canje])
+  articulo Articulo @relation(fields: [id_articulo], references: [id_articulo])
+  @@map("DETALLE_CANJE")
+}
+
+model BitacoraPuntos {
+  id_registro   Int @id @default(autoincrement())
+  id_estudiante Int
+  id_responsable Int
+  puntos_antes  Int
+  puntos_despues Int
+  motivo        String
+  fecha         DateTime @default(now())
+
+  estudiante Estudiante @relation(fields: [id_estudiante], references: [id_estudiante])
+  responsable Responsable @relation(fields: [id_responsable], references: [id_responsable])
+  @@map("BITACORA_PUNTOS")
+}
