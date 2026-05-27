@@ -1,12 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import API from '../api'
-import { Link } from 'react-router-dom'
+import AppLayout from '../components/AppLayout'
 
 export default function Store(){
   const [articulos, setArticulos] = useState([])
   const [cart, setCart] = useState([])
   const [idEstudiante, setIdEstudiante] = useState('')
   const [idResponsable, setIdResponsable] = useState('')
+  const [query, setQuery] = useState('')
+  const [onlyAvailable, setOnlyAvailable] = useState(true)
+  const [studentInfo, setStudentInfo] = useState(null)
+  const [studentLoading, setStudentLoading] = useState(false)
+  const [studentError, setStudentError] = useState(null)
   const [error, setError] = useState(null)
   const [message, setMessage] = useState(null)
 
@@ -16,9 +21,24 @@ export default function Store(){
       .catch(err => console.error(err))
   }, [])
 
+  useEffect(() => {
+    setStudentInfo(null)
+    setStudentError(null)
+  }, [idEstudiante])
+
   const totalPuntos = useMemo(() => {
     return cart.reduce((acc, it) => acc + it.precio_puntos * it.cantidad, 0)
   }, [cart])
+
+  const filtered = useMemo(() => {
+    return articulos.filter(a => {
+      const matches = `${a.nombre} ${a.descripcion || ''}`.toLowerCase().includes(query.toLowerCase())
+      const available = !onlyAvailable || a.stock_disponible > 0
+      return matches && available
+    })
+  }, [articulos, query, onlyAvailable])
+
+  const balanceOk = studentInfo ? studentInfo.puntos_disponibles >= totalPuntos : null
 
   function addToCart(a){
     setError(null)
@@ -45,12 +65,28 @@ export default function Store(){
     setCart(prev => prev.filter(p => p.id_articulo !== id))
   }
 
+  async function loadStudent(){
+    setStudentError(null)
+    setStudentInfo(null)
+    if (!idEstudiante) return setStudentError('Ingresa el ID del estudiante.')
+    setStudentLoading(true)
+    try{
+      const res = await API.get(`/estudiantes/${idEstudiante}`)
+      setStudentInfo(res.data)
+    }catch(err){
+      setStudentError(err.response?.data?.error || 'No se pudo consultar estudiante')
+    }
+    setStudentLoading(false)
+  }
+
   async function checkout(){
     setError(null)
     setMessage(null)
     if (!idEstudiante) return setError('Ingresa el ID del estudiante.')
     if (!idResponsable) return setError('Ingresa el ID del responsable.')
     if (cart.length === 0) return setError('El carrito esta vacio.')
+    if (!studentInfo) return setError('Consulta el estudiante antes de canjear.')
+    if (balanceOk === false) return setError('Saldo insuficiente para este canje.')
 
     try{
       const payload = {
@@ -67,26 +103,35 @@ export default function Store(){
   }
 
   return (
-    <div className="p-8 page-enter">
-      <header className="flex flex-wrap gap-3 items-center justify-between mb-6">
-        <div>
-          <h1 className="text-4xl">Tienda de Puntos</h1>
-          <p className="text-sm text-slate-500">Catalogo publico con stock y precio en puntos.</p>
+    <AppLayout
+      title="Tienda de puntos"
+      subtitle="Catalogo publico con stock y precio en puntos."
+      actions={<button onClick={() => setCart([])} className="btn-soft">Vaciar carrito</button>}
+    >
+      <div className="card p-5 mb-6">
+        <div className="grid md:grid-cols-3 gap-3">
+          <div>
+            <label className="label">Buscar articulo</label>
+            <input className="input" placeholder="Cuaderno, pelota..." value={query} onChange={e => setQuery(e.target.value)} />
+          </div>
+          <div className="flex items-end gap-3">
+            <label className="flex items-center gap-2 text-sm text-slate-600">
+              <input type="checkbox" checked={onlyAvailable} onChange={e => setOnlyAvailable(e.target.checked)} />
+              Solo disponibles
+            </label>
+            <span className="badge-neutral">{filtered.length} items</span>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Link to="/dashboard" className="px-3 py-2 bg-slate-800 text-white rounded">Dashboard</Link>
-          <Link to="/historial" className="px-3 py-2 bg-emerald-600 text-white rounded">Historial</Link>
-        </div>
-      </header>
+      </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
         <section className="lg:col-span-2">
           <div className="grid md:grid-cols-2 gap-4 stagger">
-            {articulos.map(a => (
-              <div key={a.id_articulo} className="rounded-xl border bg-white p-4 shadow-sm">
+            {filtered.map(a => (
+              <div key={a.id_articulo} className="card p-4">
                 <div className="flex items-start justify-between">
                   <h3 className="text-xl">{a.nombre}</h3>
-                  <span className="text-sm px-2 py-1 rounded bg-slate-100">{a.precio_puntos} pts</span>
+                  <span className="badge-neutral">{a.precio_puntos} pts</span>
                 </div>
                 <p className="text-sm text-slate-500 mt-1">{a.descripcion || 'Sin descripcion'}</p>
                 <div className="flex items-center justify-between mt-4">
@@ -94,7 +139,7 @@ export default function Store(){
                   <button
                     disabled={a.stock_disponible <= 0}
                     onClick={() => addToCart(a)}
-                    className={`px-3 py-2 rounded ${a.stock_disponible <= 0 ? 'bg-slate-200 text-slate-400' : 'bg-amber-500 text-white'}`}
+                    className={a.stock_disponible <= 0 ? 'btn-soft opacity-60' : 'btn-warm'}
                   >
                     Agregar
                   </button>
@@ -104,12 +149,12 @@ export default function Store(){
           </div>
         </section>
 
-        <aside className="rounded-xl border bg-white p-4 shadow-sm h-fit">
+        <aside className="card p-5 h-fit">
           <h2 className="text-lg mb-3">Carrito</h2>
           {cart.length === 0 && <div className="text-sm text-slate-500">Sin items.</div>}
           <div className="grid gap-3">
             {cart.map(c => (
-              <div key={c.id_articulo} className="flex items-center justify-between border-b pb-2">
+              <div key={c.id_articulo} className="flex items-center justify-between border-b border-slate-100 pb-2">
                 <div>
                   <div className="text-sm">{c.nombre}</div>
                   <div className="text-xs text-slate-500">{c.precio_puntos} pts c/u</div>
@@ -121,9 +166,9 @@ export default function Store(){
                     max={c.stock_disponible}
                     value={c.cantidad}
                     onChange={(e) => updateQty(c.id_articulo, parseInt(e.target.value || '1'))}
-                    className="w-16 border p-1"
+                    className="w-16 input"
                   />
-                  <button onClick={() => removeItem(c.id_articulo)} className="text-xs text-red-600">Quitar</button>
+                  <button onClick={() => removeItem(c.id_articulo)} className="text-xs text-rose-600">Quitar</button>
                 </div>
               </div>
             ))}
@@ -131,12 +176,22 @@ export default function Store(){
 
           <div className="mt-4 grid gap-3">
             <div>
-              <label className="text-sm">ID estudiante</label>
-              <input value={idEstudiante} onChange={e => setIdEstudiante(e.target.value)} className="w-full border p-2 mt-1" placeholder="Ej: 1" />
+              <label className="label">ID estudiante</label>
+              <div className="flex gap-2">
+                <input value={idEstudiante} onChange={e => setIdEstudiante(e.target.value)} className="input" placeholder="Ej: 1" />
+                <button onClick={loadStudent} className="btn-soft">Consultar</button>
+              </div>
+              {studentLoading && <div className="text-xs text-slate-400 mt-1">Consultando...</div>}
+              {studentError && <div className="text-xs text-rose-600 mt-1">{studentError}</div>}
+              {studentInfo && (
+                <div className="text-xs text-slate-500 mt-1">
+                  {studentInfo.nombre} {studentInfo.apellido} - {studentInfo.puntos_disponibles} pts disponibles
+                </div>
+              )}
             </div>
             <div>
-              <label className="text-sm">ID responsable</label>
-              <input value={idResponsable} onChange={e => setIdResponsable(e.target.value)} className="w-full border p-2 mt-1" placeholder="Ej: 1" />
+              <label className="label">ID responsable</label>
+              <input value={idResponsable} onChange={e => setIdResponsable(e.target.value)} className="input" placeholder="Ej: 1" />
             </div>
           </div>
 
@@ -145,12 +200,21 @@ export default function Store(){
             <span className="text-lg">{totalPuntos} pts</span>
           </div>
 
-          {error && <div className="text-red-600 text-sm mt-3">{error}</div>}
+          {balanceOk === true && <div className="badge-positive mt-3">Saldo suficiente</div>}
+          {balanceOk === false && <div className="badge-negative mt-3">Saldo insuficiente</div>}
+
+          {error && <div className="text-rose-600 text-sm mt-3">{error}</div>}
           {message && <div className="text-emerald-700 text-sm mt-3">{message}</div>}
 
-          <button onClick={checkout} className="w-full mt-4 bg-slate-900 text-white p-2 rounded">Canjear</button>
+          <button
+            onClick={checkout}
+            className="btn-primary w-full mt-4"
+            disabled={cart.length === 0 || !idEstudiante || !idResponsable || balanceOk === false}
+          >
+            Canjear
+          </button>
         </aside>
       </div>
-    </div>
+    </AppLayout>
   )
 }

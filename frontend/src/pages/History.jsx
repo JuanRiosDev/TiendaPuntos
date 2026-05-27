@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import API from '../api'
-import { Link } from 'react-router-dom'
+import AppLayout from '../components/AppLayout'
 
 export default function History(){
   const [idEstudiante, setIdEstudiante] = useState('')
@@ -19,53 +19,53 @@ export default function History(){
   }
 
   return (
-    <div className="p-8 page-enter">
-      <header className="flex flex-wrap gap-3 items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl">Historial de Puntos</h1>
-          <p className="text-sm text-slate-500">Consulta la bitacora por estudiante.</p>
+    <AppLayout
+      title="Historial de puntos"
+      subtitle="Consulta la bitacora por estudiante y revisa cambios de saldo."
+      actions={<button onClick={load} className="btn-soft">Actualizar</button>}
+    >
+      <div className="card p-5 max-w-2xl">
+        <label className="label">ID estudiante</label>
+        <div className="flex gap-2 mt-2">
+          <input value={idEstudiante} onChange={e => setIdEstudiante(e.target.value)} className="input" placeholder="Ej: 1" />
+          <button onClick={load} className="btn-accent">Buscar</button>
         </div>
-        <div className="flex gap-2">
-          <Link to="/dashboard" className="px-3 py-2 bg-slate-800 text-white rounded">Dashboard</Link>
-          <Link to="/tienda" className="px-3 py-2 bg-amber-500 text-white rounded">Tienda</Link>
-        </div>
-      </header>
-
-      <div className="bg-white border rounded-xl p-4 shadow-sm max-w-2xl">
-        <label className="text-sm">ID estudiante</label>
-        <div className="flex gap-2 mt-1">
-          <input value={idEstudiante} onChange={e => setIdEstudiante(e.target.value)} className="border p-2 flex-1" placeholder="Ej: 1" />
-          <button onClick={load} className="bg-emerald-600 text-white px-4 rounded">Buscar</button>
-        </div>
-        {error && <div className="text-red-600 text-sm mt-3">{error}</div>}
+        {error && <div className="text-rose-600 text-sm mt-3">{error}</div>}
+        {movs.length > 0 && <div className="text-xs text-slate-500 mt-2">{movs.length} movimientos</div>}
       </div>
 
-      <div className="mt-6">
+      <div className="card p-5 mt-6">
         {movs.length === 0 ? (
           <div className="text-sm text-slate-500">Sin movimientos.</div>
         ) : (
-          <table className="min-w-full bg-white">
+          <table className="table">
             <thead>
               <tr>
-                <th className="p-2 text-left">Fecha</th>
-                <th className="p-2 text-left">Motivo</th>
-                <th className="p-2 text-left">Antes</th>
-                <th className="p-2 text-left">Despues</th>
+                <th>Fecha</th>
+                <th>Motivo</th>
+                <th>Antes</th>
+                <th>Despues</th>
+                <th>Cambio</th>
               </tr>
             </thead>
             <tbody>
-              {movs.map(m => (
-                <tr key={m.id_registro} className="border-t">
-                  <td className="p-2 text-sm">{new Date(m.fecha).toLocaleString()}</td>
-                  <td className="p-2 text-sm">{m.motivo}</td>
-                  <td className="p-2 text-sm">{m.puntos_antes}</td>
-                  <td className="p-2 text-sm">{m.puntos_despues}</td>
-                </tr>
-              ))}
+              {movs.map(m => {
+                const delta = m.puntos_despues - m.puntos_antes
+                const badgeClass = delta >= 0 ? 'badge-positive' : 'badge-negative'
+                return (
+                  <tr key={m.id_registro}>
+                    <td>{new Date(m.fecha).toLocaleString()}</td>
+                    <td>{m.motivo}</td>
+                    <td>{m.puntos_antes}</td>
+                    <td>{m.puntos_despues}</td>
+                    <td><span className={badgeClass}>{delta >= 0 ? `+${delta}` : delta}</span></td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         )}
       </div>
-    </div>
+    </AppLayout>
   )
 }

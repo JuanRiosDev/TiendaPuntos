@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import API from '../api'
-import { Link } from 'react-router-dom'
+import AppLayout from '../components/AppLayout'
+import StatCard from '../components/StatCard'
 
 export default function Reports(){
   const [summary, setSummary] = useState(null)
@@ -18,6 +19,8 @@ export default function Reports(){
     API.get('/reportes/grados')
       .then(res => setGrados(res.data))
       .catch(() => setError('No se pudo cargar totales por grado'))
+
+    loadRanking()
   }, [])
 
   async function loadRanking(){
@@ -34,59 +37,40 @@ export default function Reports(){
   }
 
   return (
-    <div className="p-8 page-enter">
-      <header className="flex flex-wrap gap-3 items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl">Reportes</h1>
-          <p className="text-sm text-slate-500">Resumen general y ranking de puntos.</p>
-        </div>
-        <div className="flex gap-2">
-          <Link to="/dashboard" className="px-3 py-2 bg-slate-800 text-white rounded">Dashboard</Link>
-          <Link to="/tienda" className="px-3 py-2 bg-amber-500 text-white rounded">Tienda</Link>
-        </div>
-      </header>
+    <AppLayout
+      title="Reportes"
+      subtitle="Resumen general, ranking de puntos y totales por grado."
+      actions={<button onClick={loadRanking} className="btn-soft">Actualizar ranking</button>}
+    >
+      {error && <div className="text-rose-600 text-sm mb-4">{error}</div>}
 
-      {error && <div className="text-red-600 text-sm mb-4">{error}</div>}
-
-      <section className="grid md:grid-cols-4 gap-3 mb-6">
-        <div className="bg-white border rounded-xl p-4 shadow-sm">
-          <div className="text-xs text-slate-500">Estudiantes</div>
-          <div className="text-2xl">{summary?.estudiantes ?? '-'}</div>
-        </div>
-        <div className="bg-white border rounded-xl p-4 shadow-sm">
-          <div className="text-xs text-slate-500">Articulos</div>
-          <div className="text-2xl">{summary?.articulos ?? '-'}</div>
-        </div>
-        <div className="bg-white border rounded-xl p-4 shadow-sm">
-          <div className="text-xs text-slate-500">Transacciones</div>
-          <div className="text-2xl">{summary?.transacciones ?? '-'}</div>
-        </div>
-        <div className="bg-white border rounded-xl p-4 shadow-sm">
-          <div className="text-xs text-slate-500">Canjes</div>
-          <div className="text-2xl">{summary?.canjes ?? '-'}</div>
-        </div>
+      <section className="grid md:grid-cols-4 gap-4">
+        <StatCard label="Estudiantes" value={summary?.estudiantes ?? '--'} tone="teal" />
+        <StatCard label="Articulos" value={summary?.articulos ?? '--'} tone="amber" />
+        <StatCard label="Transacciones" value={summary?.transacciones ?? '--'} tone="sky" />
+        <StatCard label="Canjes" value={summary?.canjes ?? '--'} tone="slate" />
       </section>
 
-      <section className="grid lg:grid-cols-2 gap-6">
-        <div className="bg-white border rounded-xl p-4 shadow-sm">
+      <section className="grid lg:grid-cols-2 gap-6 mt-6">
+        <div className="card p-5">
           <h2 className="text-lg mb-3">Totales por grado</h2>
           {grados.length === 0 ? (
             <div className="text-sm text-slate-500">Sin datos.</div>
           ) : (
-            <table className="min-w-full">
+            <table className="table">
               <thead>
                 <tr>
-                  <th className="p-2 text-left">Grado</th>
-                  <th className="p-2 text-left">Estudiantes</th>
-                  <th className="p-2 text-left">Puntos acumulados</th>
+                  <th>Grado</th>
+                  <th>Estudiantes</th>
+                  <th>Puntos acumulados</th>
                 </tr>
               </thead>
               <tbody>
                 {grados.map(g => (
-                  <tr key={g.id_grado} className="border-t">
-                    <td className="p-2 text-sm">{g.nombre} (nivel {g.nivel})</td>
-                    <td className="p-2 text-sm">{g.estudiantes}</td>
-                    <td className="p-2 text-sm">{g.puntos_acumulados}</td>
+                  <tr key={g.id_grado}>
+                    <td>{g.nombre} (nivel {g.nivel})</td>
+                    <td>{g.estudiantes}</td>
+                    <td>{g.puntos_acumulados}</td>
                   </tr>
                 ))}
               </tbody>
@@ -94,31 +78,38 @@ export default function Reports(){
           )}
         </div>
 
-        <div className="bg-white border rounded-xl p-4 shadow-sm">
+        <div className="card p-5">
           <h2 className="text-lg mb-3">Ranking</h2>
-          <div className="flex flex-wrap gap-2 mb-3">
-            <input className="border p-2" placeholder="ID grado (opcional)" value={grado} onChange={e => setGrado(e.target.value)} />
-            <input className="border p-2" type="number" min="1" value={limit} onChange={e => setLimit(parseInt(e.target.value || '10'))} />
-            <button onClick={loadRanking} className="bg-slate-900 text-white px-4 rounded">Buscar</button>
+          <div className="grid md:grid-cols-3 gap-2 mb-3">
+            <select className="input" value={grado} onChange={e => setGrado(e.target.value)}>
+              <option value="">Todos los grados</option>
+              {grados.map(g => (
+                <option key={g.id_grado} value={g.id_grado}>{g.nombre}</option>
+              ))}
+            </select>
+            <input className="input" type="number" min="1" value={limit} onChange={e => setLimit(parseInt(e.target.value || '10'))} />
+            <button onClick={loadRanking} className="btn-primary">Buscar</button>
           </div>
 
           {ranking.length === 0 ? (
             <div className="text-sm text-slate-500">Sin ranking cargado.</div>
           ) : (
-            <table className="min-w-full">
+            <table className="table">
               <thead>
                 <tr>
-                  <th className="p-2 text-left">Estudiante</th>
-                  <th className="p-2 text-left">Grado</th>
-                  <th className="p-2 text-left">Acumulados</th>
+                  <th>#</th>
+                  <th>Estudiante</th>
+                  <th>Grado</th>
+                  <th>Acumulados</th>
                 </tr>
               </thead>
               <tbody>
-                {ranking.map(r => (
-                  <tr key={r.id_estudiante} className="border-t">
-                    <td className="p-2 text-sm">{r.nombre} {r.apellido}</td>
-                    <td className="p-2 text-sm">{r.grado?.nombre}</td>
-                    <td className="p-2 text-sm">{r.puntos_acumulados}</td>
+                {ranking.map((r, index) => (
+                  <tr key={r.id_estudiante}>
+                    <td>{index + 1}</td>
+                    <td>{r.nombre} {r.apellido}</td>
+                    <td>{r.grado?.nombre}</td>
+                    <td>{r.puntos_acumulados}</td>
                   </tr>
                 ))}
               </tbody>
@@ -126,6 +117,6 @@ export default function Reports(){
           )}
         </div>
       </section>
-    </div>
+    </AppLayout>
   )
 }
