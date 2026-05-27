@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["nodejs_18"]
+
+[phases.install]
+cmds = ["npm --prefix backend install"]
+
+[phases.build]
+cmds = ["npm --prefix backend run prisma:generate"]
+
+[start]
+cmd = "npm --prefix backend run start"
