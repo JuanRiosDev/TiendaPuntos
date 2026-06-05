@@ -13,12 +13,14 @@ const articulosRouter = require('./routes/articulos');
 const transaccionesRouter = require('./routes/transacciones');
 const canjesRouter = require('./routes/canjes');
 const reportesRouter = require('./routes/reportes');
+const responsablesRouter = require('./routes/responsables');
 
 app.use('/articulos', articulosRouter);
 app.use('/estudiantes', estudiantesRouter);
 app.use('/transacciones', transaccionesRouter);
 app.use('/canjes', canjesRouter);
 app.use('/reportes', reportesRouter);
+app.use('/responsables', responsablesRouter);
 
 app.get('/', (req, res) => res.json({ ok: true, version: 'sesion-2-backend' }));
 

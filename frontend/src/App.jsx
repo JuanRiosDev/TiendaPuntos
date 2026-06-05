@@ -5,6 +5,7 @@ import Students from './pages/Students'
 import Store from './pages/Store'
 import History from './pages/History'
 import Reports from './pages/Reports'
+import Profesores from './pages/Profesores'
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
       <Routes>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/estudiantes" element={<Students />} />
+        <Route path="/profesores" element={<Profesores />} />
         <Route path="/tienda" element={<Store />} />
         <Route path="/historial" element={<History />} />
         <Route path="/reportes" element={<Reports />} />
