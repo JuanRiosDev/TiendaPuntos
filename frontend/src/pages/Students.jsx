@@ -89,6 +89,16 @@ export default function Students() {
     } catch (err) { console.error(err) }
   }
 
+  async function hardDelete(id, nombre) {
+    if (!confirm(`¿Eliminar permanentemente a ${nombre}? Esta acción no se puede deshacer.`)) return
+    try {
+      await API.delete(`/estudiantes/${id}/permanente`)
+      load()
+    } catch (err) {
+      alert(err.response?.data?.error || 'No se pudo eliminar el estudiante')
+    }
+  }
+
   const total = students.length
   const activos = useMemo(() => students.filter(s => s.activo).length, [students])
   const inactivos = total - activos
@@ -222,7 +232,10 @@ export default function Students() {
                       <button onClick={() => openEdit(s)} className="btn-soft text-xs py-1 px-2">Editar</button>
                       {s.activo
                         ? <button onClick={() => softDelete(s.id_estudiante)} className="text-xs py-1 px-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50">Desactivar</button>
-                        : <button onClick={() => reactivate(s.id_estudiante)} className="text-xs py-1 px-2 rounded-lg border border-teal-200 text-teal-600 hover:bg-teal-50">Reactivar</button>
+                        : <>
+                            <button onClick={() => reactivate(s.id_estudiante)} className="text-xs py-1 px-2 rounded-lg border border-teal-200 text-teal-600 hover:bg-teal-50">Reactivar</button>
+                            <button onClick={() => hardDelete(s.id_estudiante, `${s.nombre} ${s.apellido}`)} className="text-xs py-1 px-2 rounded-lg border border-red-400 text-red-700 hover:bg-red-100 font-semibold">Eliminar</button>
+                          </>
                       }
                     </div>
                   </td>

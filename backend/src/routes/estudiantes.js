@@ -78,12 +78,26 @@ router.put('/:id', async (req, res, next) => {
   }
 });
 
-// DELETE /estudiantes/:id  (soft delete, admin only)
+// DELETE /estudiantes/:id  (soft delete)
 router.delete('/:id', async (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
     const updated = await prisma.estudiante.update({ where: { id_estudiante: id }, data: { activo: false } });
     res.json({ ok: true, estudiante: updated });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /estudiantes/:id/permanente (hard delete, solo si ya está inactivo)
+router.delete('/:id/permanente', async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id);
+    const estudiante = await prisma.estudiante.findUnique({ where: { id_estudiante: id } });
+    if (!estudiante) return res.status(404).json({ error: 'Estudiante no encontrado' });
+    if (estudiante.activo) return res.status(400).json({ error: 'Solo se pueden eliminar permanentemente estudiantes inactivos' });
+    await prisma.estudiante.delete({ where: { id_estudiante: id } });
+    res.json({ ok: true });
   } catch (err) {
     next(err);
   }
